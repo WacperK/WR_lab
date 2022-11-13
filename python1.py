@@ -233,7 +233,7 @@ try:
             if self.error.sense.lostLine():
                 self.setNormalSpeed(0)
             else:
-                 self.setNormalSpeed(20)
+                 self.setNormalSpeed(self.normalSpeed)
 
 
 
@@ -246,7 +246,7 @@ try:
          
             
         def open(self):
-            self.servo.on_for_degrees(SpeedPercent(20), self.closeAngle)
+            self.servo.on_for_degrees(SpeedPercent(20), -self.closeAngle)
             self.isClosed = False
 
         def close(self):
@@ -256,57 +256,62 @@ try:
         def isClosed(self):
             return self.isClosed
 
-    
+    class robot:
+        def __init__(self, motors, gripper):
+            self.motors = motors
+            self.gripper = gripper
+
+        
+        def followLine(self):
+            self.motors.error.sense.readout()
+            self.motors.error.updateValues()
+        
+            if self.motors.error.sense.rightIsCrossing() or self.motors.error.sense.leftIsCrossing() or self.motors.error.sense.lostLine():
+                if self.motors.error.sense.rightIsCrossing() and self.motors.error.sense.leftIsCrossing():
+                    print('Skrzyzowanie')
+                    self.motors.clearAdd()
+                elif self.motors.error.sense.leftIsCrossing():
+                    print('Skrecam w lewo')
+                    self.motors.checkLine()
+                    #motors.turnLeft()
+                    self.motors.findLineLeft()
+                elif self.motors.error.sense.rightIsCrossing():
+                    print('Skrecam w prawo')
+                    self.motors.checkLine()
+                    #motors.turnRight()
+                    self.motors.findLineRight()
+                elif self.motors.error.sense.lostLine():
+                    if self.motors.lastTurn == 'r':
+                        self.motors.turnRight()
+                    elif self.motors.lastTurn == 'l':
+                        self.motors.turnLeft()
+                    else:
+                        pass
+
+            elif(self.motors.error.sense.lostLine()):
+                print("Linia Zgubiona")
+                if self.motors.lastTurn =='r':
+                    self.motors.turnRight()
+                elif self.motors.lastTurn == 'l':
+                    self.motors.turnLeft()
+            else:
+                self.motors.clearAdd()
+                print('Prosto')
+        
+            self.motors.drive()
+
 
     print('Inicjalizacja sensorow oraz silnikow')
     sense = Senses()
     errHandler  = ErrorHandler(sense)
     motors = Wheels(True, errHandler)
     gripper = gripper()
+    robot = robot(motors, gripper)
 
     print('Entering the loop...')
     #Glowna petla
     while(1):
-
-        sense.readout()
-        errHandler.updateValues()
-        
-        if sense.rightIsCrossing() or sense.leftIsCrossing() or sense.lostLine():
-            if sense.rightIsCrossing() and sense.leftIsCrossing():
-                print('Skrzyzowanie')
-                motors.clearAdd()
-            elif sense.leftIsCrossing():
-                print('Skrecam w lewo')
-                motors.checkLine()
-                #motors.turnLeft()
-                motors.findLineLeft()
-            elif sense.rightIsCrossing():
-                print('Skrecam w prawo')
-                motors.checkLine()
-                #motors.turnRight()
-                motors.findLineRight()
-            elif sense.lostLine():
-                if motors.lastTurn == 'r':
-                    motors.turnRight()
-                elif motors.lastTurn == 'l':
-                    motors.turnLeft()
-                else:
-                    pass
-
-        elif(sense.lostLine()):
-            print("Linia Zgubiona")
-            if motors.lastTurn =='r':
-                motors.turnRight()
-            elif motors.lastTurn == 'l':
-                motors.turnLeft()
-        else:
-            motors.clearAdd()
-            print('Prosto')
-        
-        motors.drive()
-        
-        #print(sense.lVal(), sense.rVal())		
-        print(sense.lVal(), sense.rVal())	
+        robot.followLine()
         
         
 except KeyboardInterrupt: #ctrl+c
