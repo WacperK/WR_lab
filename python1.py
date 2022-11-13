@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-from ev3dev2.motor import LargeMotor, OUTPUT_A, OUTPUT_B, OUTPUT_C, SpeedPercent, ServoMotor, MediumMotor
-from ev3dev2.sensor import INPUT_4, INPUT_3
-from ev3dev2.sensor.lego import ColorSensor
-from ev3dev2.led import Leds
 from time import sleep
+
+from ev3dev2.led import Leds
+from ev3dev2.motor import (OUTPUT_A, OUTPUT_B, OUTPUT_C, LargeMotor,
+                           MediumMotor, ServoMotor, SpeedPercent)
+from ev3dev2.sensor import INPUT_3, INPUT_4, INPUT_2
+from ev3dev2.sensor.lego import ColorSensor, InfraredSensor
 
 # TODO: Add code here
 
@@ -44,6 +46,8 @@ try:
         def __init__(self):
             self.leftSensor = ColorSensor(INPUT_3)
             self.rightSensor = ColorSensor(INPUT_4)
+            self.infraredSensor = InfraredSensor(INPUT_2)
+            self.infraredSensor.MODE_IR_PROX = 'IR-PROX'
             self.rightReadout = 0
             self.leftReadout = 0
             self.lastRightReadout = 0
@@ -58,6 +62,8 @@ try:
             self.rightAlert = 10
             self.hasLostLine = False
 
+            self.distanceToObject = 100
+
         def readR(self):
             temp = self.rightSensor.reflected_light_intensity
             self.lastRightReadout = self.rightReadout
@@ -68,6 +74,19 @@ try:
             temp = self.leftSensor.reflected_light_intensity
             self.lastLeftReadout = self.leftReadout
             self.leftReadout = temp
+            return temp
+
+        def readDistance(self):
+            temp = self.infraredSensor.proximity
+            self.distanceToObject = self.infraredSensor.proximity
+            return temp
+
+        def readRightColor(self):
+            temp = self.rightSensor.color
+            return temp
+
+        def readLeftColor(self):
+            temp = self.leftSensor.color
             return temp
 
         def lVal(self):
