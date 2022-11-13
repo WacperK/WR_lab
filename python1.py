@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from ev3dev2.motor import LargeMotor, OUTPUT_A, OUTPUT_B, OUTPUT_C, SpeedPercent, ServoMotor
+from ev3dev2.motor import LargeMotor, OUTPUT_A, OUTPUT_B, OUTPUT_C, SpeedPercent, ServoMotor, MediumMotor
 from ev3dev2.sensor import INPUT_4, INPUT_3
 from ev3dev2.sensor.lego import ColorSensor
 from ev3dev2.led import Leds
@@ -19,13 +19,14 @@ try:
 			self.lastRightReadout = 0
 			self.lastLeftReadout = 0
 			self.alertValue = 28
-			self.lNormalValue = 35
-			self.rNormalValue = 28
+			self.lNormalValue = 12
+			self.rNormalValue = 10
 			self.errorTrigger = 15
 			#self.leftAlert = self.lNormalValue - self.errorTrigger
 			#self.rightAlert =  self.rNormalValue - self.errorTrigger
 			self.leftAlert = 15
-			self.rightAlert = 15
+			self.rightAlert = 10
+			self.hasLostLine = False
 
 		def readR(self):
 			temp = self.rightSensor.reflected_light_intensity
@@ -63,8 +64,10 @@ try:
 
 		def lostLine(self):
 			if self.rVal() > 30 and self.lVal() > 35:
+				self.hasLostLine = True
 				return True
 			else:
+				self.hasLostLine = False
 				return False
 
 		
@@ -87,7 +90,7 @@ try:
 			self.lastLError = 0
 			self.lastRError = 0
 			#Parametry regulatora
-			self.proportional = 0.3
+			self.proportional = 0.5
 			self.differential = 0
 			#Korekcje
 			self.rCorrection = 0
@@ -184,14 +187,20 @@ try:
 			else:
 				return False
 		
+		def lostLineBoost(self):
+			if self.error.sense.hasLostLine == True:
+				return 30
+			else:
+				return 0
+		
 		def turnRight(self):
-			self.rightAdd = self.error.returnRCorr()
-			self.leftAdd = -20
+			self.rightAdd = self.error.returnRCorr() + self.lostLineBoost()
+			self.leftAdd = -20 - self.error.returnRCorr() - self.lostLineBoost()
 			self.lastTurn = 'r'
 
 		def turnLeft(self):
-			self.leftAdd = self.error.returnLCorr()
-			self.rightAdd = -20
+			self.leftAdd = self.error.returnLCorr() + self.lostLineBoost()
+			self.rightAdd = -20 - self.error.returnLCorr() - self.lostLineBoost()
 			self.lastTurn = 'l' 
 
 		def clearAdd(self):
@@ -199,16 +208,23 @@ try:
 			self.leftAdd = 0 
 
 		def findLineLeft(self):
-			while(self.error.sense.leftReadout < self.error.sense.leftAlert + 5):
-				self.turnLeft()
+			self.turnLeft()
+			self.drive()
+			while(self.error.sense.leftReadout < self.error.sense.lNormalValue):
+				#self.turnLeft()
 				self.error.sense.readout()
 				self.error.updateValues()
+			self.clearAdd()
+			self.drive()
 
 		def findLineRight(self):
-			while(self.error.sense.rightReadout < self.error.sense.rightAlert + 5):
-				self.turnRight()
+			self.turnRight()
+			self.drive()
+			while(self.error.sense.rightReadout < self.error.sense.rNormalValue):
 				self.error.sense.readout()
 				self.error.updateValues()
+			self.clearAdd()
+			self.drive()
 
 		def setNormalSpeed(self, speed):
 			self.normalSpeed = speed
@@ -223,16 +239,34 @@ try:
 
 	class gripper:
 		def __init__(self):
-			self.servo = ServoMotor(OUTPUT_B)
+			self.servo = MediumMotor(OUTPUT_B)
+			self.openPos = self.servo.position
+			self.inverseRotation = False
+			self.pulsesPerRotation = self.servo.count_per_rot
+			self.closeAngle = 30
+			self.direction = 1 if self.inverseRotation == False else -1
 
-		def movePosition(self, position):
-			self.servo.position_sp = position
+		def angleToPulses(self, angle):
+			#konwersja kata na impulsy enkodera
+			if angle > 0 and angle < 360:
+				return angle * self.pulsesPerRotation / 360
+			else:
+				return 0 
+			
 			
 		def open(self):
-			self.movePosition(180)
+			#wpisanie pozycji otwartego chwytaka (zapisywana przy inicjalizacji chwytaka)
+			self.servo.position_sp = self.openPos
+			self.servo.run_to_abs_pos()
 
 		def close(self):
-			self.movePosition(-180)
+			deltaPos = self.angleToPulses(self.closeAngle)
+			closePos = self.openPos + deltaPos * self.direction
+			self.servo.position_sp = closePos
+			self.servo.run_to_abs_pos()
+
+		def rewriteMotor(self):
+			self.servo.run_to_abs_pos()
 
 
 
@@ -257,11 +291,13 @@ try:
 			elif sense.leftIsCrossing():
 				print('Skrecam w lewo')
 				motors.checkLine()
-				motors.turnLeft()
+				#motors.turnLeft()
+				motors.findLineLeft()
 			elif sense.rightIsCrossing():
 				print('Skrecam w prawo')
 				motors.checkLine()
-				motors.turnRight()
+				#motors.turnRight()
+				motors.findLineRight()
 			elif sense.lostLine():
 				if motors.lastTurn == 'r':
 					motors.turnRight()
