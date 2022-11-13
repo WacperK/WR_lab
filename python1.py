@@ -291,19 +291,33 @@ try:
             self.servo = MediumMotor(OUTPUT_B)
             self.isClosed = False
             self.closeAngle = 38
+            self.grabObj = True
             
          
-            
+        #Zamykanie i otwieranie chwytaka ze sprawdzeniem, czy przypadkiem nie jest juz otwarty (pozycjonowanie w przyrostowym)    
         def open(self):
-            self.servo.on_for_degrees(SpeedPercent(20), -self.closeAngle)
-            self.isClosed = False
+            if self.isClosed:
+                self.servo.on_for_degrees(SpeedPercent(10), -self.closeAngle)
+                self.isClosed = False
+            else:
+                pass
 
         def close(self):
-            self.servo.on_for_degrees(SpeedPercent(20), self.closeAngle)
-            self.isClosed = True
+            if self.isClosed == False:
+                self.servo.on_for_degrees(SpeedPercent(10), self.closeAngle)
+                self.isClosed = True
+            else:
+                pass
 
         def isClosed(self):
             return self.isClosed
+
+        # Czy chwytak powinien zlapac objekt przy kontakcie
+        def setGrab(self):
+            self.grabObj = True
+
+        def resetGrab(self):
+            self.grabObj = False
 
     class robot:
         def __init__(self, motors, gripper):
@@ -348,6 +362,13 @@ try:
                 print('Prosto')
         
             self.motors.drive()
+
+
+        def gripperHandling(self):
+            if(self.motors.error.sense.readDistance < 10 and self.gripper.grabObj == True):
+                self.gripper.close()
+            if(self.gripper.isClosed() and self.gripper.grabObj == False):
+                self.gripper.open()
 
 
     print('Inicjalizacja...')
