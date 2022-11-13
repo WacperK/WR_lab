@@ -9,6 +9,36 @@ from time import sleep
 
 
 try:
+    class colors:
+        def __init__(self):
+            self.NO_COLOR = 0
+            self.BLACK = 1
+            self.BLUE = 2
+            self.GREEN = 3
+            self.YELLOW = 4
+            self.RED = 5
+            self.WHITE = 6
+            self.BROWN = 7
+
+        def valueToColor(self, value):
+            if value == self.BLACK:
+                return 'black'
+            elif value == self.BLUE:
+                return 'blue'
+            elif value == self.GREEN:
+                return 'green'
+            elif value == self.YELLOW:
+                return 'yellow'
+            elif value == self.RED:
+                return 'red'
+            elif value == self.WHITE:
+                return 'white'
+            elif value == self.NO_COLOR:
+                return 'no color'
+            else:
+                print('Value not attached to a specific color')
+                return -1
+
 
     class Senses:
         def __init__(self):
@@ -301,7 +331,8 @@ try:
             self.motors.drive()
 
 
-    print('Inicjalizacja sensorow oraz silnikow')
+    print('Inicjalizacja...')
+    color = colors()
     sense = Senses()
     errHandler  = ErrorHandler(sense)
     motors = Wheels(True, errHandler)
