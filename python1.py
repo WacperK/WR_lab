@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from ev3dev2.motor import LargeMotor, OUTPUT_A, OUTPUT_C, SpeedPercent, MoveTank
+from ev3dev2.motor import LargeMotor, OUTPUT_A, OUTPUT_B, OUTPUT_C, SpeedPercent, ServoMotor
 from ev3dev2.sensor import INPUT_4, INPUT_3
 from ev3dev2.sensor.lego import ColorSensor
 from ev3dev2.led import Leds
@@ -79,7 +79,9 @@ try:
 
 	class ErrorHandler:
 		def __init__(self, sense):
+			#podrzedna klasa czujnika
 			self.sense = sense
+			#blad lewy prawy i ostatnie
 			self.lError = 0
 			self.rError = 0
 			self.lastLError = 0
@@ -90,11 +92,6 @@ try:
 			#Korekcje
 			self.rCorrection = 0
 			self.lCorrection = 0
-			self.lIntegral = 0
-			self.rIntegral = 0
-			#Korekcje skumulowane
-			
-
 			
 		def calcRCorrection(self):
 			self.rCorrection = self.rError * self.proportional
@@ -103,17 +100,6 @@ try:
 		def calcLCorrection(self):
 			self.lCorrection = self.lError * self.proportional
 
-		def incLIntegral(self):
-			self.lIntegral+=1
-
-		def incRIntegral(self):
-			self.rIntegral+=1
-
-		def clearRIntegral(self):
-			self.rIntegral = 0
-
-		def clearLIntegral(self):
-			self.lIntegral = 0
 
 		def updateValues(self):
 			self.lastLError = self.lError
@@ -131,18 +117,6 @@ try:
 			#self.rError = self.sense.rNormalValue - self.sense.rightReadout	
 			self.calcRCorrection()
 			self.calcLCorrection()
-
-		def returnLIntegral():
-			if self.lIntegral <= 20:
-				return int(self.lIntegral)
-			else:
-				return 20
-
-		def returnRIntegral():
-			if self.rIntegral <= 20:
-				return int(self.rIntegral)
-			else:
-				return 20
 		
 		def returnLCorr(self):
 			return int(self.lCorrection)
@@ -205,24 +179,10 @@ try:
 				return False
 
 		def isTurningLeft(self):
-			if self.rightAdd > 0 or self.error.rIntegral > 0:
+			if self.rightAdd > 0:
 				return True
 			else:
 				return False
-
-
-		#zmiana wartosci delty predkosci
-		def changeLAdd(self, value):
-			if value > self.maxTurnAdd:
-				return
-			else:
-				self.leftAdd = value
-
-		def changeRAdd(self, value):
-			if value > self.maxTurnAdd:
-				return
-			else:
-				self.rightAdd = value
 		
 		def turnRight(self):
 			self.rightAdd = self.error.returnRCorr()
@@ -238,20 +198,46 @@ try:
 			self.rightAdd = 0
 			self.leftAdd = 0 
 
+		def findLineLeft(self):
+			while(self.error.sense.leftReadout < self.error.sense.leftAlert + 5):
+				self.turnLeft()
+				self.error.sense.readout()
+				self.error.updateValues()
+
+		def findLineRight(self):
+			while(self.error.sense.rightReadout < self.error.sense.rightAlert + 5):
+				self.turnRight()
+				self.error.sense.readout()
+				self.error.updateValues()
+
 		def setNormalSpeed(self, speed):
 			self.normalSpeed = speed
 
 		def checkLine(self):
 			if self.error.sense.lostLine():
 				self.setNormalSpeed(0)
-
 			else:
 			 	self.setNormalSpeed(20)
+
+
+
+	class gripper:
+		def __init__(self):
+			self.servo = ServoMotor(OUTPUT_B)
+
+		def movePosition(self, position):
+			self.servo.position_sp = position
 			
+		def open(self):
+			self.movePosition(180)
+
+		def close(self):
+			self.movePosition(-180)
 
 
 
-	print("Inicjalizacja sensorow oraz silnikow")
+
+	print('Inicjalizacja sensorow oraz silnikow')
 	sense = Senses()
 	errHandler  = ErrorHandler(sense)
 	motors = Wheels(True, errHandler)
@@ -292,8 +278,6 @@ try:
 				motors.turnLeft()
 		else:
 			motors.clearAdd()
-			errHandler.clearRIntegral()
-			errHandler.clearLIntegral()
 			print('Prosto')
 		
 		motors.drive()
