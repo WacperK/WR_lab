@@ -13,6 +13,7 @@ from ev3dev2.sensor.lego import ColorSensor, InfraredSensor
 try:
     class colors:
         def __init__(self):
+            self.colorsCount = 8
             self.NO_COLOR = 0
             self.BLACK = 1
             self.BLUE = 2
@@ -40,25 +41,27 @@ try:
             else:
                 print('Value not attached to a specific color')
                 return -1
+            
+    colors = colors()
 
     class color_buffer:
         def __init__(self):
             self.itemsNumber = 5
-            self.colorsDict = {}
-            self.colorsDict[colors.NO_COLOR] = 0
-            self.colorsDict[colors.BLACK] = 0
-            self.colorsDict[colors.BLUE] = 0
-            self.colorsDict[colors.GREEN] = 0
-            self.colorsDict[colors.YELLOW] = 0
-            self.colorsDict[colors.RED] = 0
-            self.colorsDict[colors.WHITE] = 0
+            self.colorValue = [0 for i in range(8)]
+            self.colorValue[colors.NO_COLOR] = 0
+            self.colorValue[colors.BLACK] = 0
+            self.colorValue[colors.BLUE] = 0
+            self.colorValue[colors.GREEN] = 0
+            self.colorValue[colors.YELLOW] = 0
+            self.colorValue[colors.RED] = 0
+            self.colorValue[colors.WHITE] = 0
 
         def incBuffer(self, color):
-            self.colorsDict[color] += 1
+            self.colorValue[color] += 1
 
         def clearBuffer(self):
-            for key in self.colorsDict.keys():
-                self.colorsDict[key] = 0
+            for i in range(len(self.colorValue)):
+                self.colorValue[i] = 0
 
 
     
@@ -83,6 +86,8 @@ try:
             self.leftAlert = 15
             self.rightAlert = 10
             self.hasLostLine = False
+            self.lColorBuffer = color_buffer()
+            self.rColorBuffer = color_buffer()
 
             self.distanceToObject = 100
 
@@ -141,7 +146,11 @@ try:
                 self.hasLostLine = False
                 return False
 
-        
+        def readColorProc(self):
+            for i in range(self.lColorBuffer.itemsNumber):
+                self.lColorBuffer.incBuffer(self.readLeftColor())
+                self.rColorBuffer.incBuffer(self.readRightColor())
+
         '''
         def isCrossing(self):
             parameters = {}
@@ -394,7 +403,6 @@ try:
 
 
     print('Inicjalizacja...')
-    color = colors()
     sense = Senses()
     errHandler  = ErrorHandler(sense)
     motors = Wheels(True, errHandler)
