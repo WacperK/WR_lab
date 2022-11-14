@@ -81,8 +81,6 @@ try:
             self.lNormalValue = 12
             self.rNormalValue = 10
             self.errorTrigger = 15
-            #self.leftAlert = self.lNormalValue - self.errorTrigger
-            #self.rightAlert =  self.rNormalValue - self.errorTrigger
             self.leftAlert = 15
             self.rightAlert = 10
             self.hasLostLine = False
@@ -150,6 +148,21 @@ try:
             for i in range(self.lColorBuffer.itemsNumber):
                 self.lColorBuffer.incBuffer(self.readLeftColor())
                 self.rColorBuffer.incBuffer(self.readRightColor())
+
+        def findBestColor(self):
+            lValue = max(self.lColorBuffer.colorValue)
+            rValue = max(self.rColorBuffer.colorValue)
+            lColor = self.lColorBuffer.colorValue.index(lValue)
+            rColor = self.rColorBuffer.colorValue.index(rValue)
+            return (lColor, rColor)
+
+        def checkColor(self):
+            self.readColorProc()
+            colors = self.findBestColor()
+            if colors == (colors.BLACK, colors.BLACK) or colors == (colors.WHITE, colors.WHITE) or (colors.BLACK, colors.WHITE) or (colors.WHITE, colors.BLACK):
+                return -1
+            else:
+                return colors
 
         '''
         def isCrossing(self):
@@ -354,6 +367,11 @@ try:
         def __init__(self, motors, gripper):
             self.motors = motors
             self.gripper = gripper
+            self.grabColors = [colors.RED]
+            self.placeColors = [colors.BLUE]
+            self.grabbingProc = False
+            self.placingProc = False
+            self.colorsTuple = None
 
         
         def followLine(self):
@@ -396,10 +414,26 @@ try:
 
 
         def gripperHandling(self):
-            if(self.motors.error.sense.readDistance < 10 and self.gripper.grabObj == True):
+            if(self.motors.error.sense.readDistance < 5 and self.gripper.grabObj == True):
                 self.gripper.close()
             if(self.gripper.isClosed() and self.gripper.grabObj == False):
                 self.gripper.open()
+
+
+        def checkForColoredLine(self):
+            temp = self.motors.error.sense.checkColor()
+            if temp == -1:
+                pass
+            else:
+                if temp[0] in self.grabColors or temp[1] in self.grabColors:
+                    self.grabbingProc = True
+                    self.colorsTuple = temp
+                elif temp[0] in self.placeColors or temp[1] in self.placeColors:
+                    self.placingProc = True
+                    self.colorsTuple = temp
+                else:
+                    pass
+
 
 
     print('Inicjalizacja...')
