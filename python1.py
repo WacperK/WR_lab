@@ -41,6 +41,28 @@ try:
                 print('Value not attached to a specific color')
                 return -1
 
+    class color_buffer:
+        def __init__(self):
+            self.itemsNumber = 5
+            self.colorsDict = {}
+            self.colorsDict[colors.NO_COLOR] = 0
+            self.colorsDict[colors.BLACK] = 0
+            self.colorsDict[colors.BLUE] = 0
+            self.colorsDict[colors.GREEN] = 0
+            self.colorsDict[colors.YELLOW] = 0
+            self.colorsDict[colors.RED] = 0
+            self.colorsDict[colors.WHITE] = 0
+
+        def incBuffer(self, color):
+            self.colorsDict[color] += 1
+
+        def clearBuffer(self):
+            for key in self.colorsDict.keys():
+                self.colorsDict[key] = 0
+
+
+    
+            
 
     class Senses:
         def __init__(self):
@@ -195,7 +217,7 @@ try:
             self.rightAdd = 0
             self.leftAdd = 0
             self.maxTurnAdd = 10
-            self.normalSpeed = 12
+            self.normalSpeed = 18
             self.lastTurn = '0'
             #ErrorHandler
             self.error = errorHandler
