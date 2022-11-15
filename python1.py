@@ -244,6 +244,7 @@ try:
             self.lastTurn = '0'
             #ErrorHandler
             self.error = errorHandler
+            self.prepFractionSpeed = 5
 
         def setWheels(self, speedLeft, speedRight):
             #check wartosci, czy nie przekroczono wartosci maksymalnych
@@ -325,6 +326,11 @@ try:
         def clearAdd(self):
             self.rightAdd = 0
             self.leftAdd = 0 
+        
+        def stopWheels(self):
+            self.setSpeed(0)
+            self.clearAdd()
+            self.drive()
 
         def findLineLeft(self):
             self.turnLeft()
@@ -344,6 +350,35 @@ try:
                 self.error.updateValues()
             self.clearAdd()
             self.drive()
+
+        def leftTurnPrepared(self, rots):
+            self.stopWheels()
+            self.clearAdd()
+  
+            self.setWheelsForRotations(self.prepFractionSpeed, self.prepFractionSpeed*3, rots, rots)
+
+        def rightTurnPrepared(self, rots):
+            self.stopWheels()
+            self.clearAdd()
+
+            self.setWheelsForRotations(self.prepFractionSpeed*3, self.prepFractionSpeed, rots, rots)
+
+
+        def leftWithdrawPrepared(self, rots):
+            self.stopWheels()
+            self.clearAdd()
+
+            self.setWheelsForRotations(-self.prepFractionSpeed, -self.prepFractionSpeed*3, rots, rots)
+
+        def rightWithdrawPrepared(self, rots):
+            self.stopWheels()
+            self.clearAdd()
+            self.setWheelsForRotations(-self.prepFractionSpeed*3, -self.prepFractionSpeed, rots, rots)
+
+        def straighWithdraw(self, rots):
+            self.stopWheels()
+            self.clearAdd()
+            self.setWheelsForRotations(-self.prepFractionSpeed*3, -self.prepFractionSpeed*3, rots, rots)
 
         def setSpeed(self, speed):
             self.Speed = speed
