@@ -81,8 +81,8 @@ try:
             self.lNormalValue = 12
             self.rNormalValue = 10
             self.errorTrigger = 15
-            self.leftAlert = 15
-            self.rightAlert = 10
+            self.leftAlert = 20
+            self.rightAlert = 15
             self.hasLostLine = False
             self.lColorBuffer = color_buffer()
             self.rColorBuffer = color_buffer()
@@ -137,6 +137,7 @@ try:
                 return False
 
         def lostLine(self):
+            #Uwaga = Tutaj wartosci pozostaly niezmienione
             if self.rVal() > 30 and self.lVal() > 35:
                 self.hasLostLine = True
                 return True
@@ -256,10 +257,35 @@ try:
             self.leftMotor.on(SpeedPercent(speedLeft))
             self.rightMotor.on(SpeedPercent(speedRight))
 
+
+        def setWheelsForTime(self, speedLeft, speedRight, time):
+            if speedLeft>100 or speedRight>100 or speedLeft<-100 or speedRight<-100:
+                print("Zla wartosc na silniku.")
+                print(speedLeft, speedRight)
+                return
+
+            #odpalenie silnikow
+
+            self.leftMotor.on_for_seconds(SpeedPercent(speedLeft), time)
+            self.rightMotor.on_for_seconds(SpeedPercent(speedRight), time)
+
+
+        def setWheelsForRotations(self, speedLeft, speedRight, lRot, pRot):
+            if speedLeft>100 or speedRight>100 or speedLeft<-100 or speedRight<-100:
+                print("Zla wartosc na silniku.")
+                print(speedLeft, speedRight)
+                return
+
+            #odpalenie silnikow
+
+            self.leftMotor.on_for_rotations(SpeedPercent(speedLeft), lRot)
+            self.rightMotor.on_for_rotations(SpeedPercent(speedRight), pRot)
+
         
         #Docelowa funkcja sterujaca(predkosc normalna+przyrosty)
         def drive(self):
             self.setWheels(self.normalSpeed + self.leftAdd, self.normalSpeed + self.rightAdd)
+
 
         #Czy skreca?
         def isTurning(self):
@@ -319,14 +345,14 @@ try:
             self.clearAdd()
             self.drive()
 
-        def setNormalSpeed(self, speed):
-            self.normalSpeed = speed
+        def setSpeed(self, speed):
+            self.Speed = speed
 
         def checkLine(self):
             if self.error.sense.lostLine():
-                self.setNormalSpeed(0)
+                self.setSpeed(0)
             else:
-                 self.setNormalSpeed(self.normalSpeed)
+                 self.setSpeed(self.normalSpeed)
 
 
 
@@ -372,6 +398,7 @@ try:
             self.grabbingProc = False
             self.placingProc = False
             self.colorsTuple = None
+            self.colorDetectionCount = 2 #Ile razy w iteracji czujnik musi wykryc kolor zeby go zaakceptowac
 
         
         def followLine(self):
@@ -425,12 +452,22 @@ try:
             if temp == -1:
                 pass
             else:
-                if temp[0] in self.grabColors or temp[1] in self.grabColors:
-                    self.grabbingProc = True
-                    self.colorsTuple = temp
-                elif temp[0] in self.placeColors or temp[1] in self.placeColors:
-                    self.placingProc = True
-                    self.colorsTuple = temp
+                if temp[0] in self.grabColors : # Czy kolor znajduje sie w zbiorze pozadanych kolorow?
+                    if self.motors.error.sense.lColorBuffer[temp[0]] > self.colorDetectionCount: # Czy przekroczyl on minimalna ilosc iteracji
+                        self.grabbingProc = True    # jesli tak, to zalacz procedure odbioru/przekazania klocka
+                        self.colorsTuple = temp
+                elif temp[1] in self.grabColors:
+                    if self.motors.error.sense.rColorBuffer[temp[1]] > self.colorDetectionCount:
+                        self.grabbingProc = True
+                        self.colorsTuple = temp
+                elif temp[0] in self.placeColors:
+                    if self.motors.error.sense.lColorBuffer[temp[0]] > self.colorDetectionCount:
+                        self.placingProc = True
+                        self.colorsTuple = temp
+                elif temp[1] in self.placeColors:
+                    if self.motors.error.sense.rColorBuffer[temp[1]] > self.colorDetectionCount:
+                        self.placingProc = True
+                        self.colorsTuple = temp
                 else:
                     pass
 
@@ -446,7 +483,9 @@ try:
     print('Entering the loop...')
     #Glowna petla
     while(1):
-        robot.followLine()
+        for i in range(3):
+            robot.followLine()
+        robot.checkForColoredLine()
         
         
 except KeyboardInterrupt: #ctrl+c
