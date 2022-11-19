@@ -283,6 +283,8 @@ try:
             self.overloadedSpeed = 25
             self.decreaseBoost = False
 
+            self.speed = self.normalSpeed #Unused for now
+
 
 
         def setWheels(self, speedLeft, speedRight):
@@ -622,34 +624,38 @@ try:
                         print("Podniesienie z lewej")
                         self.motors.straightApproachPrep(1)
                         self.motors.leftTurnPrep(2)
+                        #Szukaj linii
                         while(self.motors.error.sense.lostLine()):
+                                self.motors.error.sense.readout()
+                                self.motors.error.updateValues()
                                 self.motors.turnLeft()
                                 self.motors.drive()
+                        #Jadac po linii, szukaj koloru
                         givenColor = self.checkForColor()
                         while(givenColor != searchedColor or givenColor != (-2, -2)):
                             self.followLine()
                             givenColor = self.checkForColor()
                         self.motors.stopWheels()
+                        #Jesli to ten kolor, podjedz pod niego i go zlap
                         if(givenColor == searchedColor):
                             self.motors.straightApproachPrep(1)
                             self.gripperHandling()
                             self.hasPickedObject = True
-                        #odejscie
-                        self.motors.rightWithdrawPrep(2)
-                        self.motors.leftTurnPrep(2)
-                        self.grabbingProc = False
-                        if self.hasPickedObject:
                             self.motors.setSpeed(self.motors.overloadedSpeed)
                             self.grabbingProc = False
                         else:
                             self.motors.setSpeed(self.motors.normalSpeed)
+                        #odejscie
+                        self.grabbingProc = False
+                        self.motors.rightWithdrawPrep(2)
+                        self.motors.leftTurnPrep(2)
                         self.motors.findLineLeft()
                         while(self.checkForColor() not in self.grabColors):
                             self.followLine()
                         #odbij na strone i zjedz na linie
                         self.motors.straightApproachPrep
                         self.motors.leftTurnPrepared(2)
-                        self.motors.findLineRight()
+                        self.motors.findLineLeft()
                         
                     elif direction == 'r':
                         #dojscie
@@ -668,9 +674,13 @@ try:
                         #dojscie
                         print("Odlozenie na lewo")
                         self.motors.straightApproachPrep(1)
-                        self.motors.leftTurnPrep(1)
-                        self.motors.setSpeed(self.motors.approachSpeed)
-                        
+                        self.motors.leftTurnPrep(2)
+                        #Szukaj linii
+                        while(self.motors.error.sense.lostLine()):
+                                self.motors.error.sense.readout()
+                                self.motors.error.updateValues()
+                                self.motors.turnLeft()
+                                self.motors.drive()
                         givenColor = self.checkForColor()
                         while(givenColor != searchedColor or givenColor != (-2, -2)):
                             self.followLine()
@@ -683,7 +693,7 @@ try:
                             ENDFLAG = True
                         #odejscie
                         self.motors.straightWithdrawPrep(2)
-                        self.motors.rightWithdrawPrep(3)
+                        self.motors.rightWithdrawPrep(2)
                         self.motors.leftTurnPrep(2)
                         self.motors.setSpeed(self.motors.normalSpeed)
                         self.motors.findLineLeft()
@@ -692,7 +702,11 @@ try:
                         #odbij na strone i zjedz na linie
                         self.placingProc = False
                         self.motors.leftTurnPrepared(2)
-                        self.motors.findLineRight()
+                        while(self.motors.error.sense.lostLine()):
+                                self.motors.error.sense.readout()
+                                self.motors.error.updateValues()
+                                self.motors.turnLeft()
+                                self.motors.drive()
                         
                         
                     elif direction == 'r':
