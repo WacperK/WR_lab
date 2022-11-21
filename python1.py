@@ -504,7 +504,7 @@ try:
             self.grabColors = [GREEN]
             self.placeColors = [GREEN]
             self.pickColors = [GREEN]
-            self.placeColors = [GREEN]
+            self.unpickColors = [GREEN]
             self.grabbingProc = False
             self.placingProc = False
             self.colorsTuple = None
@@ -607,7 +607,7 @@ try:
                 return (-1, -1)
             elif self.hasPickedObject == False:
                 if temp[0] in self.pickColors or temp[1] in self.pickColors:
-                    if self.motors.error.sense.rColorBuffer.colorValue[temp[1]] >= self.colorDetectionCount and temp[0] in self.pickColors:
+                    if self.motors.error.sense.rColorBuffer.colorValue[temp[1]] >= self.colorDetectionCount and temp[1] in self.pickColors:
                         self.motors.error.sense.clearBuffers()
                         return temp[0]
                     if self.motors.error.sense.lColorBuffer.colorValue[temp[0]] >= self.colorDetectionCount and temp[0] in self.pickColors:
@@ -620,14 +620,14 @@ try:
                 else:
                     self.motors.error.sense.clearBuffers()
             elif self.hasPickedObject == True:
-                if temp[0] in self.placeColors or temp[1] in self.placeColors:
-                    if self.motors.error.sense.rColorBuffer.colorValue[temp[1]] >= self.colorDetectionCount and temp[0] in self.pickColors:
+                if temp[0] in self.unpickColors or temp[1] in self.unpickColors:
+                    if self.motors.error.sense.rColorBuffer.colorValue[temp[1]] >= self.colorDetectionCount and temp[1] in self.unpickColors:
                         self.motors.error.sense.clearBuffers()
                         return temp[0]
-                    if self.motors.error.sense.lColorBuffer.colorValue[temp[0]] >= self.colorDetectionCount and temp[0] in self.pickColors:
+                    if self.motors.error.sense.lColorBuffer.colorValue[temp[0]] >= self.colorDetectionCount and temp[0] in self.unpickColors:
                         self.motors.error.sense.clearBuffers()
                         return temp[1]
-                elif temp[0] not in self.placeColors and temp[1] not in self.placeColors:
+                elif temp[0] not in self.unpickColors and temp[1] not in self.unpickColors:
                     self.motors.error.sense.clearBuffers()
                     return (-2, -2)
                 else:
@@ -652,15 +652,11 @@ try:
                         self.motors.turnLeft()
                         self.motors.drive()
                         while(self.motors.error.sense.lostLine()):
-                                #self.motors.turnRight()
-                                #self.motors.drive()
                                 self.motors.error.sense.readout()
                                 self.motors.error.updateValues()
-                                #self.motors.turnRight()
-                                #self.motors.drive()
                         print('Szukam koloru za kolorem')
                         self.motors.stopWheels()
-			#Jadac po linii, szukaj koloru
+			            #Jadac po linii, szukaj koloru
                         givenColor = self.checkForColor()
                         while(givenColor != searchedColor):
                             for i in range(3):
@@ -719,15 +715,10 @@ try:
                             self.hasPickedObject = False
                             ENDFLAG = True
                         #odejscie
-                        self.motors.rightWithdrawPrep(2)
-                        self.motors.leftTurnPrep(1)
-                        self.motors.setSpeed(self.motors.normalSpeed)
-                        self.motors.findLineLeft()
-                        self.placingProc = False       
-                    elif direction == 'r':
-                        #dojscie
-                        print("Odlozenie na prawo")
-                        pass
+                        self.grabbingProc = False
+                        self.motors.straightWithdrawPrep(2)
+                        self.motors.rightTurnPrep(1)
+                        self.placingProc = False
                 
 
     print('Inicjalizacja...')
@@ -740,17 +731,11 @@ try:
     print('Entering the loop...')
     #Glowna petla
     while(ENDFLAG == False):
-        #for i in range(2):
-        #    robot.followLine()
-        #robot.checkForColoredLine()
-        #robot.grabbingProcedure()
-        #robot.placingProcedure()
         for i in range(2):
             robot.followLine()
         robot.checkForColoredLine()
-        robot.grabbingProcedure(GREEN)
-        robot.placingProcedure(GREEN)
-        #robot.grabbingProcedure(RED)
+        robot.grabbingProcedure(robot.pickColors[0])
+        robot.placingProcedure(robot.placeColors[0])
         
         print(sense.leftReadout, sense.rightReadout)
         #TESTY
