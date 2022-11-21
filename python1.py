@@ -622,6 +622,8 @@ try:
                     if direction == 'l':
                         #dojscie
                         print("Podniesienie z lewej")
+                        self.motors.stopWheels()
+                        sleep(2)
                         self.motors.straightApproachPrep(1)
                         self.motors.leftTurnPrep(2)
                         #Szukaj linii
@@ -673,6 +675,8 @@ try:
                     if direction == 'l':
                         #dojscie
                         print("Odlozenie na lewo")
+                        self.motors.stopWheels()
+                        sleep(2)
                         self.motors.straightApproachPrep(1)
                         self.motors.leftTurnPrep(2)
                         #Szukaj linii
