@@ -149,7 +149,7 @@ try:
 
         def lostLine(self):
             #Uwaga = Tutaj wartosci pozostaly niezmienione
-            if self.rVal() > 22 and self.lVal() > 30:
+            if self.rVal() > 24 and self.lVal() > 32:
                 self.hasLostLine = True
                 return True
             else:
@@ -213,7 +213,7 @@ try:
             self.lastLError = 0
             self.lastRError = 0
             #Parametry regulatora
-            self.proportional = 0.3
+            self.proportional = 0.2
             self.differential = 0
             #Korekcje
             self.rCorrection = 0
@@ -277,7 +277,7 @@ try:
             
             self.lastTurn = '0'
 
-            self.normalSpeed = 17
+            self.normalSpeed = 22
             self.prepFractionSpeed = 10
             self.approachSpeed = 12
             self.overloadedSpeed = 25
@@ -345,9 +345,9 @@ try:
         
         def lostLineBoost(self):
             if self.error.sense.hasLostLine == True and self.decreaseBoost == False:
-                return 30
+                return 20
             elif self.error.sense.hasLostLine == True and self.decreaseBoost == True:
-                return 10
+                return 5
             else:
                 return 0
         
@@ -390,7 +390,7 @@ try:
 
         def leftTurnPrep(self, time):
             self.stopWheels()
-            self.leftMotor.on_for_rotations(SpeedPercent(self.prepFractionSpeed*2), 3)
+            self.leftMotor.on_for_rotations(SpeedPercent(self.prepFractionSpeed*1.5), 3)
             self.lastTurn = 'l' 
 
         def rightTurnPrep(self, time):
@@ -481,9 +481,9 @@ try:
             self.motors = motors
             self.gripper = gripper
             self.grabColors = [GREEN]
-            self.placeColors = [RED]
-            self.pickColors = [GREEN, GREEN]
-            self.placeColors = [RED]
+            self.placeColors = [GREEN]
+            self.pickColors = [GREEN]
+            self.placeColors = [GREEN]
             self.grabbingProc = False
             self.placingProc = False
             self.colorsTuple = None
@@ -622,25 +622,28 @@ try:
                     if direction == 'l':
                         #dojscie
                         print("Podniesienie z lewej")
+                        self.motors.decreaseBoost = True
                         self.motors.stopWheels()
                         sleep(2)
                         self.motors.straightApproachPrep(1)
-                        self.motors.leftTurnPrep(2)
+                        self.motors.leftTurnPrep(1)
                         #Szukaj linii
                         while(self.motors.error.sense.lostLine()):
                                 self.motors.error.sense.readout()
                                 self.motors.error.updateValues()
-                                self.motors.turnLeft()
+                                self.motors.turnRight()
                                 self.motors.drive()
-                        #Jadac po linii, szukaj koloru
+                        print('Szukam koloru za kolorem')
+			#Jadac po linii, szukaj koloru
                         givenColor = self.checkForColor()
-                        while(givenColor != searchedColor or givenColor != (-2, -2)):
+                        while(givenColor != searchedColor):
                             self.followLine()
                             givenColor = self.checkForColor()
+                            print(givenColor)
+                        print('Kolor znaleziony')
                         self.motors.stopWheels()
                         #Jesli to ten kolor, podjedz pod niego i go zlap
                         if(givenColor == searchedColor):
-                            self.motors.straightApproachPrep(1)
                             self.gripperHandling()
                             self.hasPickedObject = True
                             self.motors.setSpeed(self.motors.overloadedSpeed)
@@ -650,14 +653,8 @@ try:
                         #odejscie
                         self.grabbingProc = False
                         self.motors.rightWithdrawPrep(2)
-                        self.motors.leftTurnPrep(2)
-                        self.motors.findLineLeft()
-                        while(self.checkForColor() not in self.grabColors):
-                            self.followLine()
-                        #odbij na strone i zjedz na linie
-                        self.motors.straightApproachPrep
-                        self.motors.leftTurnPrepared(2)
-                        self.motors.findLineLeft()
+                        self.motors.leftTurnPrep(1)
+                        
                         
                     elif direction == 'r':
                         #dojscie
@@ -729,24 +726,11 @@ try:
     print('Entering the loop...')
     #Glowna petla
     while(ENDFLAG == False):
-        #for i in range(2):
-        #    robot.followLine()
-        #robot.checkForColoredLine()
-        #robot.grabbingProcedure()
-        #robot.placingProcedure()
+
+
         robot.followLine()
-        robot.checkForColoredLine()
-        robot.grabbingProcedure(RED)
-        #robot.grabbingProcedure(RED)
-        
 
 
-        #TESTY
-        #robot.followLine()
-
-        #robot.motors.error.sense.checkColor()
-        
-        #robot.checkForColor()
         
         
 except KeyboardInterrupt: #ctrl+c
