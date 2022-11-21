@@ -321,7 +321,7 @@ try:
         
         #Docelowa funkcja sterujaca(predkosc normalna+przyrosty)
         def drive(self):
-            self.setWheels(self.normalSpeed + self.leftAdd, self.normalSpeed + self.rightAdd)
+            self.setWheels(self.Speed + self.leftAdd, self.Speed + self.rightAdd)
 
 
         #Czy skreca?
@@ -432,9 +432,12 @@ try:
         def setSpeed(self, speed):
             self.Speed = speed
 
+        def setNormalSpeed(self):
+            self.setSpeed(self.normalSpeed)
+            self.clearAdd()
+            self.drive()
+
         def checkLine(self):
-            #Niescislosc - w turnRight/Left jest juz wyzerowanie tej wartosci odjeciem -20
-            #Teraz to sie powtarza i cos tu nie gra
             if self.error.sense.lostLine():
                 self.setSpeed(0)
             else:
@@ -726,8 +729,6 @@ try:
     print('Entering the loop...')
     #Glowna petla
     while(ENDFLAG == False):
-
-
         robot.followLine()
 
 
