@@ -564,6 +564,8 @@ try:
 
 
         def checkForColoredLine(self):
+            if ENDFLAG==True:
+                return
             temp = self.motors.error.sense.checkColor()
             if temp == (-1, -1):
                 self.motors.error.sense.clearBuffers()
@@ -634,7 +636,9 @@ try:
                     self.motors.error.sense.clearBuffers()
 
         def grabbingProcedure(self, searchedColor):
-            if(self.grabbingProc == False):
+            if self.grabbingProc == False:
+                return
+            elif ENDFLAG == True:
                 return
             else:
                 self.motors.stopWheels()
@@ -676,6 +680,7 @@ try:
                         self.grabbingProc = False
                         self.motors.straightWithdrawPrep(2)
                         self.motors.rightTurnPrep(1)
+                        self.motors.lastTurn = 'l'
                         
                         
                     elif direction == 'r':
@@ -719,6 +724,7 @@ try:
                         self.motors.straightWithdrawPrep(2)
                         self.motors.rightTurnPrep(1)
                         self.placingProc = False
+                        self.motors.lastTurn = 'l'
                 
 
     print('Inicjalizacja...')
