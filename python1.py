@@ -277,13 +277,12 @@ try:
             
             self.lastTurn = '0'
 
-            self.normalSpeed = 22
+            self.normalSpeed = 15
             self.prepFractionSpeed = 10
             self.approachSpeed = 12
             self.overloadedSpeed = 25
             self.decreaseBoost = False
-
-            self.speed = self.normalSpeed #Unused for now
+            self.speed = self.normalSpeed
 
 
 
@@ -483,17 +482,6 @@ try:
         def __init__(self, motors, gripper):
             self.motors = motors
             self.gripper = gripper
-            self.grabColors = [GREEN]
-            self.placeColors = [GREEN]
-            self.pickColors = [GREEN]
-            self.placeColors = [GREEN]
-            self.grabbingProc = False
-            self.placingProc = False
-            self.colorsTuple = None
-            self.colorDetectionCount = 2 #Ile razy w iteracji czujnik musi wykryc kolor zeby go zaakceptowac
-            self.hasPickedObject = False
-
-
         
         def followLine(self):
             self.motors.error.sense.readout()
@@ -545,178 +533,8 @@ try:
                 self.gripper.open()
 
 
-        def checkForColoredLine(self):
-            temp = self.motors.error.sense.checkColor()
-            if temp == (-1, -1):
-                self.motors.error.sense.clearBuffers()
-                return (-1, -1)
-            else:
-                if self.hasPickedObject == False:
-                    if temp[0] in self.grabColors : # Czy kolor znajduje sie w zbiorze pozadanych kolorow?
-                        if self.motors.error.sense.lColorBuffer.colorValue[temp[0]] >= self.colorDetectionCount: # Czy przekroczyl on minimalna ilosc iteracji
-                            self.grabbingProc = True    # jesli tak, to zalacz procedure odbioru/przekazania klocka
-                            self.colorsTuple = (temp[0], 0)
-                            self.motors.error.sense.clearBuffers()
-                            return temp[0]
-                    elif temp[1] in self.grabColors:
-                        if self.motors.error.sense.rColorBuffer.colorValue[temp[1]] >= self.colorDetectionCount:
-                            self.grabbingProc = True
-                            self.colorsTuple = (0, temp[1])
-                            self.motors.error.sense.clearBuffers()
-                            return temp[1]
-                    else:
-                        self.motors.error.sense.clearBuffers()
-                else:
-                    if temp[0] in self.placeColors:
-                        if self.motors.error.sense.lColorBuffer.colorValue[temp[0]] >= self.colorDetectionCount:
-                            self.placingProc = True
-                            self.colorsTuple = (temp[0], 0)
-                            self.motors.error.sense.clearBuffers()
-                            return temp[0]
-                    elif temp[1] in self.placeColors:
-                        if self.motors.error.sense.rColorBuffer.colorValue[temp[1]]  >= self.colorDetectionCount:
-                            self.placingProc = True
-                            self.colorsTuple = (0, temp[1])
-                            self.motors.error.sense.clearBuffers()
-                            return temp[0]
-                    else:
-                        self.motors.error.sense.clearBuffers()
-
-        def checkForColor(self):
-            temp = self.motors.error.sense.checkColor()
-            if temp == (-1, -1):
-                self.motors.error.sense.clearBuffers()
-                return (-1, -1)
-            elif self.hasPickedObject == False:
-                if temp[0] in self.pickColors or temp[1] in self.pickColors:
-                    if self.motors.error.sense.rColorBuffer.colorValue[temp[1]] >= self.colorDetectionCount and temp[0] in self.pickColors:
-                        self.motors.error.sense.clearBuffers()
-                        return temp[0]
-                    if self.motors.error.sense.lColorBuffer.colorValue[temp[0]] >= self.colorDetectionCount and temp[0] in self.pickColors:
-                        self.motors.error.sense.clearBuffers()
-                        return temp[1]
-                elif temp[0] not in self.pickColors and temp[1] not in self.pickColors:
-                    #to nie ten kolor
-                    self.motors.error.sense.clearBuffers()
-                    return (-2, -2)
-                else:
-                    self.motors.error.sense.clearBuffers()
-            elif self.hasPickedObject == True:
-                if temp[0] in self.placeColors or temp[1] in self.placeColors:
-                    if self.motors.error.sense.rColorBuffer.colorValue[temp[1]] >= self.colorDetectionCount and temp[0] in self.pickColors:
-                        self.motors.error.sense.clearBuffers()
-                        return temp[0]
-                    if self.motors.error.sense.lColorBuffer.colorValue[temp[0]] >= self.colorDetectionCount and temp[0] in self.pickColors:
-                        self.motors.error.sense.clearBuffers()
-                        return temp[1]
-                elif temp[0] not in self.placeColors and temp[1] not in self.placeColors:
-                    self.motors.error.sense.clearBuffers()
-                    return (-2, -2)
-                else:
-                    self.motors.error.sense.clearBuffers()
-
-        def grabbingProcedure(self, searchedColor):
-            if(self.grabbingProc == False):
-                return
-            else:
-                self.motors.stopWheels()
-                if(self.colorsTuple[0] != 0 or self.colorsTuple[1] != 0):
-                    direction = self.motors.error.sense.compareReflectedLight()
-                    if direction == 'l':
-                        #dojscie
-                        print("Podniesienie z lewej")
-                        self.motors.decreaseBoost = True
-                        self.motors.stopWheels()
-                        sleep(2)
-                        self.motors.straightApproachPrep(1)
-                        self.motors.leftTurnPrep(1)
-                        #Szukaj linii
-                        while(self.motors.error.sense.lostLine()):
-                                self.motors.error.sense.readout()
-                                self.motors.error.updateValues()
-                                self.motors.turnRight()
-                                self.motors.drive()
-                        print('Szukam koloru za kolorem')
-			#Jadac po linii, szukaj koloru
-                        givenColor = self.checkForColor()
-                        while(givenColor != searchedColor):
-                            self.followLine()
-                            givenColor = self.checkForColor()
-                            print(givenColor)
-                        print('Kolor znaleziony')
-                        self.motors.stopWheels()
-                        #Jesli to ten kolor, podjedz pod niego i go zlap
-                        if(givenColor == searchedColor):
-                            self.gripperHandling()
-                            self.hasPickedObject = True
-                            self.motors.setSpeed(self.motors.overloadedSpeed)
-                            self.grabbingProc = False
-                        else:
-                            self.motors.setSpeed(self.motors.normalSpeed)
-                        #odejscie
-                        self.grabbingProc = False
-                        self.motors.rightWithdrawPrep(2)
-                        self.motors.leftTurnPrep(1)
-                        
-                        
-                    elif direction == 'r':
-                        #dojscie
-                        pass
-                        
 
 
-        def placingProcedure(self, searchedColor):
-            if(self.placingProc == False):
-                return
-            else:
-                self.motors.stopWheels()
-                if(self.colorsTuple[0] != 0 or self.colorsTuple[1] != 0):
-                    direction = self.motors.error.sense.compareReflectedLight()
-                    if direction == 'l':
-                        #dojscie
-                        print("Odlozenie na lewo")
-                        self.motors.stopWheels()
-                        sleep(2)
-                        self.motors.straightApproachPrep(1)
-                        self.motors.leftTurnPrep(2)
-                        #Szukaj linii
-                        while(self.motors.error.sense.lostLine()):
-                                self.motors.error.sense.readout()
-                                self.motors.error.updateValues()
-                                self.motors.turnLeft()
-                                self.motors.drive()
-                        givenColor = self.checkForColor()
-                        while(givenColor != searchedColor or givenColor != (-2, -2)):
-                            self.followLine()
-                            givenColor = self.checkForColor()
-                        self.motors.stopWheels()
-                        if(givenColor == searchedColor):
-                            self.motors.straightApproachPrep(2)
-                            self.gripperHandling()
-                            self.hasPickedObject = False
-                            ENDFLAG = True
-                        #odejscie
-                        self.motors.straightWithdrawPrep(2)
-                        self.motors.rightWithdrawPrep(2)
-                        self.motors.leftTurnPrep(2)
-                        self.motors.setSpeed(self.motors.normalSpeed)
-                        self.motors.findLineLeft()
-                        while(self.checkForColor() not in self.grabColors):
-                            self.followLine()
-                        #odbij na strone i zjedz na linie
-                        self.placingProc = False
-                        self.motors.leftTurnPrepared(2)
-                        while(self.motors.error.sense.lostLine()):
-                                self.motors.error.sense.readout()
-                                self.motors.error.updateValues()
-                                self.motors.turnLeft()
-                                self.motors.drive()
-                        
-                        
-                    elif direction == 'r':
-                        #dojscie
-                        print("Odlozenie na prawo")
-                        pass
                 
 
     print('Inicjalizacja...')
