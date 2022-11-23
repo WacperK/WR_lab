@@ -707,7 +707,48 @@ try:
                         
                     elif direction == 'r':
                         #dojscie
-                        pass
+                        print("Podniesienie z prawej")
+                        self.motors.decreaseBoost = True
+                        self.motors.stopWheels()
+                        sleep(2)
+                        self.motors.straightApproachPrep(1)
+                        self.motors.rightRotationPrep(2)
+                        #Szukaj linii
+                        self.motors.turnRight()
+                        self.motors.drive()
+                        while(self.motors.error.sense.lostLine()):
+                                self.motors.error.sense.readout()
+                                self.motors.error.updateValues()
+                        print('Szukam koloru za kolorem')
+                        self.motors.stopWheels()
+			            #Jadac po linii, szukaj koloru
+                        givenColor = self.checkForColor()
+                        while(givenColor != searchedColor):
+                            for i in range(3):
+                                self.followLine()
+                            givenColor = self.checkForColor()
+                            print(givenColor)
+                        print('Kolor znaleziony')
+                        self.motors.stopWheels()
+                        #Jesli to ten kolor, podjedz pod niego i go zlap
+                        if(givenColor == searchedColor):
+                            self.gripperHandling()
+                            self.hasPickedObject = True
+                            self.grabbingProc = False
+                        else:
+                            pass
+                        #odejscie
+                        self.grabbingProc = False
+                        self.motors.straightWithdrawPrep(2)
+                        self.motors.leftTurnPrep(1)
+                        self.motors.clearAdd()
+                        self.motors.leftAdd = 5
+                        self.motors.rightAdd = 10
+                        self.motors.drive()
+                        sleep(1)
+                        while(self.motors.error.sense.lostLine()):
+                                self.motors.error.sense.readout()
+                                self.motors.error.updateValues()
                         
 
 
@@ -722,47 +763,44 @@ try:
                     direction = self.motors.error.sense.compareReflectedLight()
                     print('Kolor do odlozenia znaleziony')
                     if direction == 'l':
-                        '''
-                        #dojscie
                         print("Odlozenie na lewa")
                         self.motors.decreaseBoost = True
                         self.motors.stopWheels()
                         sleep(2)
                         self.motors.straightApproachPrep(1)
-                        self.motors.leftRotationPrep(2)
-                        self.motors.turnLeft()
-                        self.motors.drive()
+                        self.motors.leftRotationPrep(3)
                         #Szukaj linii
+                        self.motors.clearAdd()
+                        self.motors.leftAdd = 5
+                        self.motors.rightAdd = -5
+                        self.motors.drive()
+                        print('Szukam linii')
                         while(self.motors.error.sense.lostLine()):
                                 self.motors.error.sense.readout()
                                 self.motors.error.updateValues()
                         givenColor = self.checkForColor()
-                        while(givenColor != searchedColor):
-                            for i in range(3):
-                                self.followLine()
+                        print('Szukam koloru')
+                        while(givenColor == (-1, -1)):
+                            self.followLineSecure()
                             givenColor = self.checkForColor()
+                            print('Wykryto kolor:')
                             print(givenColor)
-                        if(givenColor == searchedColor):
-                            self.gripperHandling()
-                            self.hasPickedObject = False
-                            ENDFLAG = True
-                        #odejscie
-                        self.grabbingProc = False
-                        self.motors.straightWithdrawPrep(2)
-                        self.motors.rightTurnPrep(1)
-                        self.motors.clearAdd()
-                        self.motors.leftAdd = 10
-                        self.motors.rightAdd = 20
-                        self.motors.drive()
+
+                        self.gripper.resetGrab()
+                        self.gripperHandling()
                         sleep(1)
-                        while(self.motors.error.sense.lostLine()):
-                                self.motors.error.sense.readout()
-                                self.motors.error.updateValues()
-                        self.motors.clearAdd
-                        self.motors.stopWheels()
+                        self.hasPickedObject = False
+                        self.ENDFLAG = True
+                        #odejscie
+                        self.motors.straightWithdrawPrep(2)
+                        self.motors.rightRotationPrep(2)
+                        self.motors.clearAdd()
+                        self.motors.lastTurn = 'r'
+                        sleep(1)
+                        print('Wychodze z procedury')
                         self.placingProc = False
-                        self.motors.lastTurn = 'l'
-                        '''
+                        self.decreaseBoost = False
+                        self.END_LOOP() # zalacza normalne wartosci do linefollowingu
                     elif direction == 'r':
                         #dojscie
                         print("Odlozenie na prawa")
